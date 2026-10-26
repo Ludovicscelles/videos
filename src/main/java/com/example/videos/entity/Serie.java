@@ -3,7 +3,7 @@ package com.example.videos.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Getter @Setter @NoArgsConstructor @ToString
+@Getter @Setter @NoArgsConstructor
 @Entity
 @Table(name = "serie")
 public class Serie extends Video {
