@@ -3,11 +3,13 @@ package com.example.videos.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Past;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import jakarta.validation.constraints.Past;
+
 
 @Getter
 @Setter
@@ -39,4 +41,7 @@ public class UserRequestDTO {
 
     @Past(message = "Birthdate must be in the past")
     private LocalDate birthdate;
+
+    @Valid
+    private AddressRequestDTO address;
 }
