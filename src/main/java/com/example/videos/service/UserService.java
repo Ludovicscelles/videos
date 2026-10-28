@@ -7,17 +7,19 @@ import com.example.videos.entity.Address;
 import com.example.videos.enums.RoleEnum;
 import com.example.videos.repository.UserRepository;
 import com.example.videos.repository.RoleRepository;
+import com.example.videos.dto.UserUpdateDTO;
 import com.example.videos.dto.UserRequestDTO;
 import com.example.videos.dto.UserResponseDTO;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +43,7 @@ public class UserService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll()
                 .stream()
@@ -48,6 +51,7 @@ public class UserService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public UserResponseDTO getUserById(Long id) {
         return userRepository.findById(id)
                 .map(this::toResponseDTO)
@@ -127,14 +131,77 @@ passwordEncoder.encode(request.getPassword())
         return toResponseDTO(savedUser);
     }
 
+    @Transactional
+    public UserResponseDTO updateUser(Long id, UserUpdateDTO request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User with ID " + id + " not found"
+                ));
 
-    public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
+        // Check if the username is already in use by another user
+        if (request.getUsername() != null
+            && !request.getUsername().isBlank()
+            && !Objects.equals(user.getUsername(), request.getUsername())
+            && userRepository.existsByUsername(request.getUsername())) {
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "User with ID " + id + " not found"
+                    HttpStatus.CONFLICT,
+                    "Username " + request.getUsername() + " is already in use"
             );
         }
-        userRepository.deleteById(id);
+
+        user.setUsername(
+                request.getUsername() != null && !request.getUsername().isBlank()
+                        ? request.getUsername()
+                        : null
+        );
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+
+        // Check if the email is already in use by another user
+        if (!user.getEmail().equals(request.getEmail())
+            && userRepository.existsByEmail(request.getEmail())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Email " + request.getEmail() + " is already in use"
+            );
+        }
+
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setBirthdate(request.getBirthdate());
+
+        // Update address if provided
+        if (request.getAddress() != null) {
+
+            AddressRequestDTO addressRequest = request.getAddress();
+
+            Address address = Optional.ofNullable(user.getAddress())
+                    .orElseGet(Address::new);
+
+            address.setNumber(addressRequest.getNumber());
+            address.setStreet(addressRequest.getStreet());
+            address.setCity(addressRequest.getCity());
+            address.setZipCode(addressRequest.getZipCode());
+            address.setCountry(addressRequest.getCountry());
+
+            user.setAddress(address);
+        }
+
+        User updatedUser = userRepository.save(user);
+
+        return toResponseDTO(updatedUser);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User with ID " + id + " not found"
+                ));
+        userRepository.delete(user);
     }
 }
