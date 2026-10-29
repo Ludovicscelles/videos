@@ -1,7 +1,10 @@
 package com.example.videos.controller;
 
-import com.example.videos.entity.Documentary;
 import com.example.videos.service.DocumentaryService;
+import com.example.videos.dto.DocumentaryResponseDTO;
+import com.example.videos.dto.DocumentaryRequestDTO;
+import com.example.videos.dto.DocumentaryUpdateDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,25 +27,25 @@ public class DocumentaryController {
     private final DocumentaryService documentaryService;
 
     @GetMapping
-    public List<Documentary> getAllDocumentaries() {
+    public List<DocumentaryResponseDTO> getAllDocumentaries() {
         return documentaryService.getAllDocumentaries();
     }
 
     @GetMapping("/{id}")
-    public Documentary getDocumentaryById(@PathVariable Long id) {
+    public DocumentaryResponseDTO getDocumentaryById(@PathVariable Long id) {
         return documentaryService.getDocumentaryById(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Documentary createDocumentary(@RequestBody Documentary documentary) {
+    public DocumentaryResponseDTO createDocumentary(@Valid @RequestBody DocumentaryRequestDTO documentary) {
         return documentaryService.createDocumentary(documentary);
     }
 
    @PutMapping("/{id}")
-    public Documentary updateDocumentary(
+    public DocumentaryResponseDTO updateDocumentary(
             @PathVariable Long id,
-            @RequestBody Documentary updatedDocumentary) {
+            @Valid @RequestBody DocumentaryUpdateDTO updatedDocumentary) {
 
         return documentaryService.updateDocumentary(id, updatedDocumentary);
     }
