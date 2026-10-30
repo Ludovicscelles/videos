@@ -2,11 +2,14 @@ package com.example.videos.service;
 
 import com.example.videos.entity.Film;
 import com.example.videos.repository.FilmRepository;
-import jakarta.transaction.Transactional;
+import com.example.videos.dto.FilmResponseDTO;
+import com.example.videos.dto.FilmRequestDTO;
+import com.example.videos.dto.FilmUpdateDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,24 +19,63 @@ public class FilmService {
 
     private final FilmRepository filmRepository;
 
-    public List<Film> getAllFilms() {
-        return filmRepository.findAll();
+    private FilmResponseDTO toResponseDTO(Film film) {
+
+        FilmResponseDTO dto = new FilmResponseDTO();
+
+        dto.setId(film.getId());
+        dto.setTitle(film.getTitle());
+        dto.setDescription(film.getDescription());
+        dto.setDuration(film.getDuration());
+        dto.setGenre(film.getGenre());
+        dto.setUrl(film.getUrl());
+        dto.setImage(film.getImage());
+        dto.setUploadDate(film.getUploadDate());
+        dto.setDirector(film.getDirector());
+        dto.setReleaseYear(film.getReleaseYear());
+
+        return dto;
     }
 
-    public Film getFilmById(Long id) {
+    @Transactional(readOnly = true)
+    public List<FilmResponseDTO> getAllFilms() {
+        return filmRepository.findAll()
+                .stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public FilmResponseDTO getFilmById(Long id) {
         return filmRepository.findById(id)
+                .map(this::toResponseDTO)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Film with ID " + id + " not found"
                 ));
     }
 
-    public Film createFilm(Film film) {
-        return filmRepository.save(film);
+    @Transactional
+    public FilmResponseDTO createFilm(FilmRequestDTO requestFilm) {
+
+        Film film = new Film();
+
+        film.setTitle(requestFilm.getTitle());
+        film.setDescription(requestFilm.getDescription());
+        film.setDuration(requestFilm.getDuration());
+        film.setGenre(requestFilm.getGenre());
+        film.setUrl(requestFilm.getUrl());
+        film.setImage(requestFilm.getImage());
+        film.setDirector(requestFilm.getDirector());
+        film.setReleaseYear(requestFilm.getReleaseYear());
+
+        Film savedFilm = filmRepository.save(film);
+
+        return toResponseDTO(savedFilm);
     }
 
     @Transactional
-    public Film updateFilm(Long id, Film updatedFilm) {
+    public FilmResponseDTO updateFilm(Long id, FilmUpdateDTO updatedFilm) {
         Film film = filmRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -49,10 +91,13 @@ public class FilmService {
         film.setDirector(updatedFilm.getDirector());
         film.setReleaseYear(updatedFilm.getReleaseYear());
 
-        return filmRepository.save(film);
+        Film savedFilm = filmRepository.save(film);
+
+        return toResponseDTO(savedFilm);
 
     }
 
+    @Transactional
     public void deleteFilm(Long id) {
         if (!filmRepository.existsById(id)) {
             throw new ResponseStatusException(
